@@ -1,4 +1,6 @@
+
 #Centroid-Based Summarization
+
 import numpy as np  # For mathematical operations
 from sentence_transformers import SentenceTransformer, util
 
@@ -13,7 +15,7 @@ sentences = [
     "Machine learning is a subset of artificial intelligence.",
     "Hospitals use AI for disease prediction."
 ]
-
+                                                        
 # Step 1: Convert sentences into embeddings
 # Output: One embedding vector per sentence
 embeddings = model.encode(sentences)
@@ -26,11 +28,16 @@ document_embedding = np.mean(embeddings, axis=0)
 similarities = util.cos_sim(document_embedding, embeddings)
 
 # similarities is a matrix, so we take first row
-similarity_scores = similarities[0]
+# error-> similarity_scores = similarities[0]
 
 # Step 4: Rank sentences by similarity score (descending order)
 # argsort() returns indices sorted in ascending order
 # [::-1] reverses it to descending order
+#  error-> ranked_indices = np.argsort(similarity_scores)[::-1]
+
+#####  Crucial concept: The similarity scores are PyTorch tensors, so we need to convert them to NumPy arrays before using np.argsort(). Otherwise, we will get an error because np.argsort() does not work with PyTorch tensors.
+#Convert tensor → NumPy array before using np.argsort() with slicing.
+similarity_scores = similarities[0].squeeze().cpu().numpy()
 ranked_indices = np.argsort(similarity_scores)[::-1]
 
 # Step 5: Select top K sentences for summary
