@@ -41,7 +41,7 @@ similarity_scores = similarities[0].squeeze().cpu().numpy()
 ranked_indices = np.argsort(similarity_scores)[::-1]
 
 # Step 5: Select top K sentences for summary
-top_k = 3  # You can change this number
+top_k = 5  # You can change this number
 summary_sentences = []
 
 for i in ranked_indices[:top_k]:
