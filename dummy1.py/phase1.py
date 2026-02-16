@@ -8,6 +8,9 @@ import numpy as np                 # For numerical operations
 import re                          # For cleaning text
 from sentence_transformers import SentenceTransformer, util  # For embeddings + similarity
 
+# Load embedding model ONCE globally
+model = SentenceTransformer("all-MiniLM-L6-v2")
+
 # Download sentence tokenizer (only first time)
 nltk.download("punkt")
 
@@ -61,7 +64,9 @@ def clean_sentences(sentences):
 def summarize(sentences, top_k=5, lambda_param=0.7):
 
     # Load embedding model
-    model = SentenceTransformer("all-MiniLM-L6-v2")
+    #model loads inside summarize() every time: This is inefficient. so instead load it once globally and reuse it.
+    #model = SentenceTransformer("all-MiniLM-L6-v2")
+
 
     # Convert sentences to embeddings
     embeddings = model.encode(sentences)
@@ -88,7 +93,19 @@ def summarize(sentences, top_k=5, lambda_param=0.7):
             if i in selected_indices:
                 mmr_scores.append(-1)
                 continue
+            # 🔥 EXTRA REDUNDANCY CHECK
+            # If too similar to any selected sentence, skip it completely
+            too_similar = False
+            for j in selected_indices:
+                similarity = util.cos_sim(embeddings[i], embeddings[j])[0][0]
+                if similarity > 0.9:
+                    too_similar = True
+                    break
 
+            if too_similar:
+                mmr_scores.append(-1)
+                continue
+            
             relevance = doc_similarities[i]
 
             redundancy = max(
@@ -102,6 +119,8 @@ def summarize(sentences, top_k=5, lambda_param=0.7):
 
         next_index = np.argmax(mmr_scores)
         selected_indices.append(next_index)
+
+        selected_indices.sort()
 
     # Return selected sentences
     return [sentences[i] for i in selected_indices]
@@ -122,6 +141,13 @@ def summarize_pdf(pdf_path, top_k=5):
     # Clean sentences
     sentences = clean_sentences(sentences)
 
+    # 🔥 Compute dynamic summary length (20% of sentences)
+    dynamic_top_k = int(len(sentences) * 0.2)
+
+    # Make sure at least 1 sentence is selected
+    if dynamic_top_k < 1:
+        dynamic_top_k = 1
+
     # Generate summary
     summary = summarize(sentences, top_k=top_k)
 
@@ -134,7 +160,7 @@ def summarize_pdf(pdf_path, top_k=5):
 
 if __name__ == "__main__":
 
-    pdf_path = "sample.pdf"   # Replace with your PDF file
+    pdf_path = r"C:\Users\centu\OneDrive\Desktop\AIbot_prep\pdfplumber.py\document.pdf"   # Replace with your PDF file
 
     summary = summarize_pdf(pdf_path, top_k=5)
 
