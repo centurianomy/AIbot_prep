@@ -46,7 +46,7 @@ def clean_sentences(sentences):
             continue
 
         # Remove short sentences
-        if len(sentence.split()) < 5:
+        if len(sentence.split()) < 3:
             continue
 
         # Remove sentences without alphabets
@@ -150,9 +150,48 @@ def summarize_pdf(pdf_path, top_k=5):
         dynamic_top_k = 1
 
     # Generate summary
-    summary = summarize(sentences, top_k=top_k)
+    summary = summarize(sentences, top_k=dynamic_top_k)
 
     return summary
+
+
+# ------------------------------
+# 5️⃣ Build Knowledge Base (for RAG)
+# ------------------------------
+
+def build_knowledge_base(pdf_path):
+
+    # Extract raw text
+    text = extract_text_from_pdf(pdf_path)
+
+    # Split into sentences
+    sentences = nltk.sent_tokenize(text)
+
+    # Clean sentences
+    sentences = clean_sentences(sentences)
+
+    # Convert sentences to embeddings
+    embeddings = model.encode(sentences)
+
+    return sentences, embeddings
+
+
+# ------------------------------
+# 6️⃣ Retrieval for Question Answering (RAG)
+# ------------------------------
+
+def answer_question(question, sentences, embeddings, top_k=3):
+
+    if len(sentences) == 0:
+        return ["No content available in document."]
+
+    question_embedding = model.encode(question)
+
+    similarities = util.cos_sim(question_embedding, embeddings)[0]
+
+    top_indices = np.argsort(similarities.cpu().numpy())[::-1][:top_k]
+
+    return [sentences[i] for i in top_indices]
 
 
 
