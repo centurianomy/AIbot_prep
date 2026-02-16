@@ -18,6 +18,7 @@ nltk.download("punkt")
 # 1️⃣ Extract text from PDF
 # ------------------------------
 
+
 def extract_text_from_pdf(pdf_path):
     all_text = []
 
@@ -154,17 +155,18 @@ def summarize_pdf(pdf_path, top_k=5):
     return summary
 
 
+
 # ------------------------------
-# 5️⃣ Run on your PDF
+# 5️⃣ Run on your PDF this code is nopt needed.
 # ------------------------------
 
-if __name__ == "__main__":
+#if __name__ == "__main__":
 
-    pdf_path = r"C:\Users\centu\OneDrive\Desktop\AIbot_prep\pdfplumber.py\document.pdf"   # Replace with your PDF file
+#    pdf_path = "document.pdf"# Replace with your PDF file
 
-    summary = summarize_pdf(pdf_path, top_k=5)
+#   summary = summarize_pdf(pdf_path, top_k=5)
 
-    print("\n=== SUMMARY ===\n")
+#    print("\n=== SUMMARY ===\n")
 
-    for sentence in summary:
-        print("-", sentence)
+#    for sentence in summary:
+#       print("-", sentence)
