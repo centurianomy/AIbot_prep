@@ -57,6 +57,19 @@ def clean_sentences(sentences):
 
     return cleaned
 
+# ------------------------------
+# CHUNKING FUNCTION
+# ------------------------------
+
+def chunk_sentences(sentences, chunk_size=50, overlap=10):
+
+    chunks = []
+
+    for i in range(0, len(sentences), chunk_size - overlap):
+        chunk = sentences[i:i + chunk_size]
+        chunks.append(chunk)
+
+    return chunks
 
 # ------------------------------
 # 3️⃣ MMR-based summarization
@@ -128,10 +141,10 @@ def summarize(sentences, top_k=5, lambda_param=0.7):
 
 
 # ------------------------------
-# 4️⃣ Full pipeline
+# HIERARCHICAL SUMMARY PIPELINE
 # ------------------------------
 
-def summarize_pdf(pdf_path, top_k=5):
+def summarize_pdf_hierarchical(pdf_path, chunk_size=50):
 
     # Extract raw text
     text = extract_text_from_pdf(pdf_path)
@@ -142,17 +155,31 @@ def summarize_pdf(pdf_path, top_k=5):
     # Clean sentences
     sentences = clean_sentences(sentences)
 
-    # 🔥 Compute dynamic summary length (20% of sentences)
-    dynamic_top_k = int(len(sentences) * 0.2)
+    if not sentences:
+        return ["No valid content found in PDF."]
 
-    # Make sure at least 1 sentence is selected
-    if dynamic_top_k < 1:
-        dynamic_top_k = 1
+    # STEP 1: Create chunks
+    chunks = chunk_sentences(sentences, chunk_size)
 
-    # Generate summary
-    summary = summarize(sentences, top_k=dynamic_top_k)
+    chunk_summaries = []
 
-    return summary
+    # STEP 2: Summarize each chunk
+    for chunk in chunks:
+
+        # 20% summary per chunk
+        top_k = max(1, int(len(chunk) * 0.2))
+
+        summary = summarize(chunk, top_k=top_k)
+
+        chunk_summaries.extend(summary)
+
+    # STEP 3: Final global summarization
+    final_top_k = min(15, max(3, int(len(chunk_summaries) * 0.3)))
+
+    final_summary = summarize(chunk_summaries, top_k=final_top_k)
+
+    return final_summary
+
 
 
 # ------------------------------
