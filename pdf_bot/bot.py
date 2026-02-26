@@ -32,7 +32,7 @@ if __name__ == "__main__":
     pdf_path = "document.pdf"  # put your PDF in root folder
 
     print("Building knowledge base...")
-    sentences, embeddings = build_knowledge_base(pdf_path)
+    chunks, embeddings = build_knowledge_base(pdf_path)
 
     print("PDF loaded successfully!\n")
 
@@ -43,9 +43,19 @@ if __name__ == "__main__":
         if question.lower() == "exit":
             break
 
-        top_sentences = answer_question(question, sentences, embeddings)
-
-        context = "\n".join(top_sentences)
+            # Brain 1- shot or RAG decision based on question type
+            # Brain 2- If question is about summary, use the summarization pipeline.
+        if "summarize" in question.lower() or "overview" in question.lower():
+    
+            from phase1 import summarize_pdf_hierarchical
+    
+            summary = summarize_pdf_hierarchical(pdf_path) #Hierarchical summarization
+            context = "\n".join(summary)
+    
+        else:
+    
+            top_chunks = answer_question(question, chunks, embeddings, top_k=2)
+            context = "\n\n".join(top_chunks)
 
         answer = generate_answer_with_llm(question, context)
 

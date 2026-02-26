@@ -186,30 +186,29 @@ def summarize_pdf_hierarchical(pdf_path, chunk_size=50):
 # 5️⃣ Build Knowledge Base (for RAG)
 # ------------------------------
 
-def build_knowledge_base(pdf_path):
+def build_knowledge_base(pdf_path, chunk_size=50):
 
-    # Extract raw text
     text = extract_text_from_pdf(pdf_path)
-
-    # Split into sentences
     sentences = nltk.sent_tokenize(text)
-
-    # Clean sentences
     sentences = clean_sentences(sentences)
 
-    # Convert sentences to embeddings
-    embeddings = model.encode(sentences)
+    chunks = chunk_sentences(sentences, chunk_size)
 
-    return sentences, embeddings
+    # Convert each chunk list into a single string
+    chunk_texts = [" ".join(chunk) for chunk in chunks]
+
+    embeddings = model.encode(chunk_texts, convert_to_tensor=True)
+
+    return chunk_texts, embeddings
 
 
 # ------------------------------
 # 6️⃣ Retrieval for Question Answering (RAG)
 # ------------------------------
 
-def answer_question(question, sentences, embeddings, top_k=3):
+def answer_question(question, chunks, embeddings, top_k=5):
 
-    if len(sentences) == 0:
+    if len(chunks) == 0:
         return ["No content available in document."]
 
     question_embedding = model.encode(question)
@@ -218,7 +217,7 @@ def answer_question(question, sentences, embeddings, top_k=3):
 
     top_indices = np.argsort(similarities.cpu().numpy())[::-1][:top_k]
 
-    return [sentences[i] for i in top_indices]
+    return [chunks[i] for i in top_indices]
 
 
 
