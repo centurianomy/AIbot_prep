@@ -1,4 +1,4 @@
-# ==============================
+
 # OFFLINE PDF EXTRACTIVE SUMMARIZER (MVP)
 # ==============================
 
@@ -9,16 +9,22 @@ import re                          # For cleaning text
 from sentence_transformers import SentenceTransformer, util  # For embeddings + similarity
 
 # Load embedding model ONCE globally
-model = SentenceTransformer("all-MiniLM-L6-v2")
+model = SentenceTransformer(
+    "all-MiniLM-L6-v2",
+    local_files_only=True #Only load from local cache.If not found → fail immediately. Avoids repeated loading and ensures offline functionality.
+)
 
-# Download sentence tokenizer (only first time)
-nltk.download("punkt")
+# Download sentence tokenizer (only first time) Only downloads if missing
+import nltk
 
+try:
+    nltk.data.find('tokenizers/punkt')
+except LookupError:
+    nltk.download('punkt')
+
+
+# 1️ Extract text from PDF
 # ------------------------------
-# 1️⃣ Extract text from PDF
-# ------------------------------
-
-
 def extract_text_from_pdf(pdf_path):
     all_text = []
 
@@ -31,10 +37,8 @@ def extract_text_from_pdf(pdf_path):
     return "\n".join(all_text)
 
 
+# 2️ Clean sentences
 # ------------------------------
-# 2️⃣ Clean sentences
-# ------------------------------
-
 def clean_sentences(sentences):
     cleaned = []
 
@@ -57,10 +61,9 @@ def clean_sentences(sentences):
 
     return cleaned
 
-# ------------------------------
-# CHUNKING FUNCTION
-# ------------------------------
 
+# 3 CHUNKING FUNCTION
+# ------------------------------
 def chunk_sentences(sentences, chunk_size=50, overlap=10):
 
     chunks = []
@@ -71,10 +74,9 @@ def chunk_sentences(sentences, chunk_size=50, overlap=10):
 
     return chunks
 
-# ------------------------------
-# 3️⃣ MMR-based summarization
-# ------------------------------
 
+# 4 MMR-based summarization
+# ------------------------------
 def summarize(sentences, top_k=5, lambda_param=0.7):
 
     # Load embedding model
@@ -83,7 +85,7 @@ def summarize(sentences, top_k=5, lambda_param=0.7):
 
 
     # Convert sentences to embeddings
-    embeddings = model.encode(sentences)
+    embeddings = model.encode(sentences, batch_size=32)
 
     # Compute document embedding
     document_embedding = np.mean(embeddings, axis=0)
@@ -107,7 +109,7 @@ def summarize(sentences, top_k=5, lambda_param=0.7):
             if i in selected_indices:
                 mmr_scores.append(-1)
                 continue
-            # 🔥 EXTRA REDUNDANCY CHECK
+            # EXTRA REDUNDANCY CHECK
             # If too similar to any selected sentence, skip it completely
             too_similar = False
             for j in selected_indices:
@@ -140,20 +142,9 @@ def summarize(sentences, top_k=5, lambda_param=0.7):
     return [sentences[i] for i in selected_indices]
 
 
+# 5 HIERARCHICAL SUMMARY PIPELINE
 # ------------------------------
-# HIERARCHICAL SUMMARY PIPELINE
-# ------------------------------
-
-def summarize_pdf_hierarchical(pdf_path, chunk_size=50):
-
-    # Extract raw text
-    text = extract_text_from_pdf(pdf_path)
-
-    # Split into sentences
-    sentences = nltk.sent_tokenize(text)
-
-    # Clean sentences
-    sentences = clean_sentences(sentences)
+def summarize_pdf_hierarchical(sentences, chunk_size=50):
 
     if not sentences:
         return ["No valid content found in PDF."]
@@ -181,29 +172,24 @@ def summarize_pdf_hierarchical(pdf_path, chunk_size=50):
     return final_summary
 
 
-
-# ------------------------------
-# 5️⃣ Build Knowledge Base (for RAG)
+# 6 Build Knowledge Base (for RAG)
 # ------------------------------
 
-def build_knowledge_base(pdf_path, chunk_size=50):
-
-    text = extract_text_from_pdf(pdf_path)
-    sentences = nltk.sent_tokenize(text)
-    sentences = clean_sentences(sentences)
+def build_knowledge_base(sentences, chunk_size=50):
 
     chunks = chunk_sentences(sentences, chunk_size)
 
     # Convert each chunk list into a single string
     chunk_texts = [" ".join(chunk) for chunk in chunks]
 
-    embeddings = model.encode(chunk_texts, convert_to_tensor=True)
-
+    embeddings = model.encode(chunk_texts, convert_to_tensor=True, batch_size=32)
+  
+    print("Number of units stored:", len(chunk_texts))
+  
     return chunk_texts, embeddings
 
 
-# ------------------------------
-# 6️⃣ Retrieval for Question Answering (RAG)
+# 7 Retrieval for Question Answering (RAG)
 # ------------------------------
 
 def answer_question(question, chunks, embeddings, top_k=5):
@@ -211,7 +197,7 @@ def answer_question(question, chunks, embeddings, top_k=5):
     if len(chunks) == 0:
         return ["No content available in document."]
 
-    question_embedding = model.encode(question)
+    question_embedding = model.encode(question, convert_to_tensor=True)
 
     similarities = util.cos_sim(question_embedding, embeddings)[0]
 
@@ -221,17 +207,5 @@ def answer_question(question, chunks, embeddings, top_k=5):
 
 
 
-# ------------------------------
-# 5️⃣ Run on your PDF this code is nopt needed.
-# ------------------------------
 
-#if __name__ == "__main__":
 
-#    pdf_path = "document.pdf"# Replace with your PDF file
-
-#   summary = summarize_pdf(pdf_path, top_k=5)
-
-#    print("\n=== SUMMARY ===\n")
-
-#    for sentence in summary:
-#       print("-", sentence)
