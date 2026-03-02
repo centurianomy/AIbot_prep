@@ -64,7 +64,7 @@ def clean_sentences(sentences):
 
 # 3 CHUNKING FUNCTION
 # ------------------------------
-def chunk_sentences(sentences, chunk_size=8, overlap=2):
+def chunk_sentences(sentences, chunk_size=6, overlap=2):
 
     chunks = []
 
@@ -175,7 +175,7 @@ def summarize_pdf_hierarchical(sentences, chunk_size=50):
 # 6 Build Knowledge Base (for RAG)
 # ------------------------------
 
-def build_knowledge_base(sentences, chunk_size=50):
+def build_knowledge_base(sentences, chunk_size=6):
 
     chunks = chunk_sentences(sentences, chunk_size)
 
@@ -185,7 +185,12 @@ def build_knowledge_base(sentences, chunk_size=50):
     embeddings = model.encode(chunk_texts, convert_to_tensor=True, batch_size=32)
   
     print("Number of units stored:", len(chunk_texts))
-  
+    
+    #for debugging purpose only: shows how many chunks were created before filtering
+    print("==========================================")
+    print("Total chunks created:", len(chunks)) 
+    print("==========================================")
+    
     return chunk_texts, embeddings
 
 

@@ -10,6 +10,16 @@ if __name__ == "__main__":
     sentences = nltk.sent_tokenize(text)
     sentences = clean_sentences(sentences)
 
+    #only for debugging purpose: shows how many sentences were extracted and cleaned
+    #print("==========================================")
+    #text = extract_text_from_pdf(pdf_path)
+    #raw_sentences = nltk.sent_tokenize(text)
+    #print("Raw sentences:", len(raw_sentences))
+    #sentences = clean_sentences(raw_sentences)
+    #print("Cleaned sentences:", len(sentences))
+    #print("==========================================")
+
+
     print("Building knowledge base...")
     chunks, embeddings = build_knowledge_base(sentences)
 
