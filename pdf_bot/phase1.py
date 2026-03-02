@@ -64,7 +64,7 @@ def clean_sentences(sentences):
 
 # 3 CHUNKING FUNCTION
 # ------------------------------
-def chunk_sentences(sentences, chunk_size=50, overlap=10):
+def chunk_sentences(sentences, chunk_size=8, overlap=2):
 
     chunks = []
 

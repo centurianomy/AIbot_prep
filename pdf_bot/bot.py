@@ -1,4 +1,5 @@
-from phase1 import build_knowledge_base, answer_question, summarize_pdf_hierarchical
+from phase1 import(extract_text_from_pdf,clean_sentences,build_knowledge_base, answer_question, summarize_pdf_hierarchical)
+import nltk
 
 if __name__ == "__main__":
 
@@ -38,8 +39,7 @@ if __name__ == "__main__":
             continue
 
         print("\n📖 Relevant content from document:\n")
-
-        for chunk in top_chunks:
-            print("-", chunk)
-            print()
+        print(top_chunks[0]) #Keep chunk size small (8–10 sentences)
+        
+       
 
