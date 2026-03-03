@@ -3,7 +3,7 @@ import nltk
 
 if __name__ == "__main__":
 
-    pdf_path = "document.pdf"  # Make sure file exists
+    pdf_path = "doc2.pdf"  # Make sure file exists
 
     # Extract + preprocess ONCE
     text = extract_text_from_pdf(pdf_path)

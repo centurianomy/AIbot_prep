@@ -54,7 +54,7 @@ def clean_sentences(sentences):
             continue
 
         # Remove sentences without alphabets
-        if not re.search(r"[a-zA-Z]", sentence):
+        if not re.search(r"[a-zA-Z]", sentence): #incvlude numbers in the check
             continue
 
         cleaned.append(sentence)
