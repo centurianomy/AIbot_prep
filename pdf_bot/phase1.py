@@ -5,7 +5,7 @@
 import pdfplumber                  # For PDF text extraction
 import nltk                        # For sentence splitting
 import numpy as np                 # For numerical operations
-import re                          # For cleaning text
+import re                          # For cleaning text, regex operations
 from sentence_transformers import SentenceTransformer, util  # For embeddings + similarity
 
 # Load embedding model ONCE globally
@@ -26,10 +26,10 @@ except LookupError:
 # 1️ Extract text from PDF
 # ------------------------------
 def extract_text_from_pdf(pdf_path):
-    all_text = []
+    all_text = [] #list to store the text extracted from each page of the PDF
 
-    with pdfplumber.open(pdf_path) as pdf:
-        for page in pdf.pages:
+    with pdfplumber.open(pdf_path) as pdf: #file handelling with auto close.
+        for page in pdf.pages: # page is like itterator and we can loop through it to get text from each page of the PDF
             text = page.extract_text()
             if text:
                 all_text.append(text)
@@ -40,7 +40,7 @@ def extract_text_from_pdf(pdf_path):
 # 2️ Clean sentences
 # ------------------------------
 def clean_sentences(sentences):
-    cleaned = []
+    cleaned = [] # a list to store cleaned sentences
 
     for sentence in sentences:
 
@@ -59,37 +59,37 @@ def clean_sentences(sentences):
 
         cleaned.append(sentence)
 
-    return cleaned
+    return cleaned #cleaned sentences stored inside cleaned list and returned at the end of function
 
 
 # 3 CHUNKING FUNCTION
 # ------------------------------
-def chunk_sentences(sentences, chunk_size=6, overlap=2):
+def chunk_sentences(sentences, chunk_size=6, overlap=2): #overlap is the number of sentences that will be repeated in consecutive chunks to maintain context. This helps ensure that important information isn't lost between chunks, especially for sentences that may be relevant to multiple chunks.
 
     chunks = []
 
-    for i in range(0, len(sentences), chunk_size - overlap):
-        chunk = sentences[i:i + chunk_size]
+    for i in range(0, len(sentences), chunk_size - overlap): # Start:Stop:Skip-> start from 0, go to the end of sentences, and step by chunk_size - overlap to create overlapping chunks
+        chunk = sentences[i:i + chunk_size] # Create a chunk of sentences starting from index i to i + chunk_size. This will create chunks of the specified size, with the specified overlap between consecutive chunks.
         chunks.append(chunk)
 
     return chunks
 
 
-# 4 MMR-based summarization
+# 4 MMR-based summarization(lambda_para is used)
 # ------------------------------
-def summarize(sentences, top_k=5, lambda_param=0.7):
+def summarize(sentences, top_k=5, lambda_param=0.7): #lambda is a parameter that controls the balance between relevance and redundancy in the MMR scoring. A higher lambda gives more weight to relevance, while a lower lambda gives more weight to redundancy. The default value of 0.7 means that relevance is weighted more heavily than redundancy in the scoring process.
 
     # Load embedding model
-    #model loads inside summarize() every time: This is inefficient. so instead load it once globally and reuse it.
+    #model loads inside summarize() every time: This is inefficient, instead load it once globally and reuse it.
     #model = SentenceTransformer("all-MiniLM-L6-v2")
 
 
     # Convert sentences to embeddings
-    embeddings = model.encode(sentences, batch_size=32)
-
+    embeddings = model.encode(sentences, batch_size=32) #batch_size is the number of sentences that will be processed together in one go. This can speed up the embedding process by leveraging parallel processing capabilities of the hardware. A batch size of 32 is a common choice that balances memory usage and processing speed, but it can be adjusted based on the available resources and the size of the input data.
+    # for better memory (CPU) utilisation 
     # Compute document embedding
-    document_embedding = np.mean(embeddings, axis=0)
-
+    document_embedding = np.mean(embeddings, axis=0) #The document embedding is computed by taking the mean of all sentence embeddings. This creates a single vector that represents the overall content of the document, which can then be used to measure the relevance of each individual sentence to the entire document.
+    # for e.g. 
     # Compute similarity of each sentence with document
     doc_similarities = util.cos_sim(document_embedding, embeddings)[0]
 
@@ -152,7 +152,7 @@ def summarize_pdf_hierarchical(sentences, chunk_size=50):
     # STEP 1: Create chunks
     chunks = chunk_sentences(sentences, chunk_size)
 
-    chunk_summaries = []
+    chunk_summaries = [] # To store summaries of each chunk
 
     # STEP 2: Summarize each chunk
     for chunk in chunks:
@@ -175,7 +175,7 @@ def summarize_pdf_hierarchical(sentences, chunk_size=50):
 # 6 Build Knowledge Base (for RAG)
 # ------------------------------
 
-def build_knowledge_base(sentences, chunk_size=6):
+def build_knowledge_base(sentences, chunk_size=6): #sentences, chunk_size=6 are
 
     chunks = chunk_sentences(sentences, chunk_size)
 
